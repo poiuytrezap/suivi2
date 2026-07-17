@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12161B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SUIVI">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Suivi — panneau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Palette codee : chaque couleur porte un sens, comme sur un synoptique.
+     Ce n'est pas un accent decoratif unique sur fond noir. */
+  --panel:#12161B; --panel-2:#181D24; --panel-3:#1E242C;
+  --rule:#2A323C; --rule-2:#39434F;
+  --text:#C9D3DE; --dim:#6E7C8C; --dimmer:#4A5563;
+  --nominal:#3FB950;   /* dans la tolerance */
+  --warn:#D29922;      /* approche du seuil */
+  --alarm:#F85149;     /* hors tolerance */
+  --setpoint:#58A6FF;  /* consigne */
+  --measure:#39C5CF;   /* valeur mesuree */
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --cond:'Barlow Condensed',system-ui,sans-serif;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--panel);color:var(--text);
+  font-family:var(--sans);font-size:15px;overscroll-behavior-y:none}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+
+/* ---- Chrome ---- */
+header{position:sticky;top:0;z-index:20;background:rgba(18,22,27,.94);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+  display:flex;align-items:center;gap:10px}
+.brand{font-family:var(--cond);font-weight:700;font-size:19px;
+  letter-spacing:.14em;text-transform:uppercase}
+.brand span{color:var(--dimmer)}
+.hdr-r{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+/* ---- LED : le vocabulaire des salles de controle ---- */
+.led{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.led-nominal{background:var(--nominal);box-shadow:0 0 8px var(--nominal)}
+.led-warn{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.led-alarm{background:var(--alarm);box-shadow:0 0 8px var(--alarm);
+  animation:pulse 1.6s infinite}
+.led-off{background:var(--dimmer)}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.led-alarm{animation:none}}
+
+/* ---- Panneaux ---- */
+main{padding:12px}
+.panel{background:var(--panel-2);border:1px solid var(--rule);
+  border-radius:4px;margin-bottom:12px}
+.panel-h{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-bottom:1px solid var(--rule);background:var(--panel-3)}
+.panel-t{font-family:var(--cond);font-weight:600;font-size:13px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.panel-b{padding:12px}
+.eyebrow{font-family:var(--cond);font-weight:600;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--dimmer)}
+
+/* ---- Chiffres : tout ce qui est mesure est en mono ---- */
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.big{font-family:var(--mono);font-size:34px;font-weight:500;
+  letter-spacing:-.02em;line-height:1}
+.unit{font-family:var(--cond);font-size:13px;color:var(--dim);
+  letter-spacing:.08em;text-transform:uppercase}
+
+/* ---- SIGNATURE : la jauge de tolerance ---- */
+.gauge{padding:14px 12px 10px}
+.gauge-top{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.verdict-w{font-family:var(--cond);font-weight:700;font-size:26px;
+  letter-spacing:.1em;text-transform:uppercase}
+.v-nominal{color:var(--nominal)} .v-alarm{color:var(--alarm)}
+.v-warn{color:var(--warn)}
+.gauge-msg{font-size:13.5px;color:var(--dim);line-height:1.5;margin-top:12px}
+.gauge-msg b{color:var(--text);font-weight:500}
+
+/* ---- Saisie ---- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{background:var(--panel-3);border:1px solid var(--rule);
+  border-radius:3px;padding:8px 10px}
+.field label{display:block;font-family:var(--cond);font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer);
+  margin-bottom:4px}
+.field input,.field select{width:100%;background:transparent;border:none;
+  color:var(--text);font-family:var(--mono);font-size:19px;padding:0;
+  outline:none;font-variant-numeric:tabular-nums}
+.field:focus-within{border-color:var(--setpoint)}
+.field.set{border-color:var(--rule-2)}
+.field select{font-family:var(--sans);font-size:15px}
+
+button{font-family:var(--cond);font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;border-radius:3px;border:1px solid var(--rule-2);
+  background:var(--panel-3);color:var(--text);padding:11px 14px;font-size:13px}
+button:active{background:var(--rule)}
+button.primary{background:var(--setpoint);border-color:var(--setpoint);
+  color:#08121F}
+button.wide{width:100%}
+.row{display:flex;gap:8px}
+
+/* ---- Nav ---- */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;
+  background:rgba(24,29,36,.97);backdrop-filter:blur(12px);
+  border-top:1px solid var(--rule);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:none;background:none;border-radius:0;
+  color:var(--dimmer);padding:14px 4px;border-top:2px solid transparent}
+nav button[aria-selected=true]{color:var(--setpoint);
+  border-top-color:var(--setpoint);background:rgba(88,166,255,.06)}
+
+/* ---- Divers ---- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:var(--cond);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dimmer);text-align:right;
+  padding:5px 6px;border-bottom:1px solid var(--rule);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px;border-bottom:1px solid var(--panel-3);
+  font-family:var(--mono);font-size:12px;text-align:right;
+  font-variant-numeric:tabular-nums}
+td.name{font-family:var(--sans);font-size:12.5px;text-align:left;color:var(--dim)}
+.pos{color:var(--nominal)} .neg{color:var(--alarm)} .neu{color:var(--dim)}
+.note{background:var(--panel-3);border-left:2px solid var(--warn);
+  padding:10px 12px;font-size:13px;line-height:1.55;margin-top:10px;
+  border-radius:0 3px 3px 0}
+.note.alarm{border-left-color:var(--alarm)}
+.note.info{border-left-color:var(--setpoint)}
+.note b{color:var(--text)}
+.hide{display:none!important}
+.center{text-align:center;color:var(--dim);padding:40px 20px;font-size:14px}
+.kv{display:flex;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid var(--panel-3);font-size:13px}
+.kv:last-child{border:none}
+.kv .k{color:var(--dim)} .kv .v{font-family:var(--mono);
+  font-variant-numeric:tabular-nums}
+.ic{color:var(--dimmer);font-size:11px}
+svg{display:block;width:100%;height:auto}
+.spin{width:16px;height:16px;border:2px solid var(--rule-2);
+  border-top-color:var(--setpoint);border-radius:50%;
+  animation:sp .7s linear infinite;display:inline-block;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));
+  background:var(--nominal);color:#06140A;padding:11px 14px;border-radius:3px;
+  font-family:var(--cond);font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;font-size:13px;text-align:center;z-index:30}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">SUIVI<span>/</span>PANEL</div>
+  <div class="hdr-r"><span id="hdr-stat">—</span></div>
+</header>
+
+<main>
+  <!-- ============ SAISIE ============ -->
+  <section id="v-saisie">
+    <div class="panel">
+      <div class="panel-h"><span class="led led-off" id="led-jour"></span>
+        <span class="panel-t">Journee</span>
+        <span class="hdr-r num" id="jour-lbl"></span></div>
+      <div class="panel-b">
+        <div class="row" style="margin-bottom:10px">
+          <button id="b-prev" style="flex:0 0 44px">‹</button>
+          <input type="date" id="d-jour" class="num" style="flex:1;background:var(--panel-3);
+            border:1px solid var(--rule);border-radius:3px;color:var(--text);
+            font-family:var(--mono);padding:9px;font-size:14px">
+          <button id="b-next" style="flex:0 0 44px">›</button>
+        </div>
+        <div class="grid">
+          <div class="field"><label>Poids · kg</label>
+            <input id="f-poids" type="number" step="0.1" inputmode="decimal" placeholder="—"></div>
+          <div class="field"><label>Pas</label>
+            <input id="f-pas" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Calories</label>
+            <input id="f-calories" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Sommeil · h</label>
+            <input id="f-sommeil_h" type="number" step="0.25" inputmode="decimal" placeholder="—"></div>
+          <div class="field"><label>Proteines · g</label>
+            <input id="f-proteines" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Glucides · g</label>
+            <input id="f-glucides" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Lipides · g</label>
+            <input id="f-lipides" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Cardio · min</label>
+            <input id="f-cardio" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Seance</label>
+            <select id="f-seance"><option value="">—</option><option>Push A</option>
+            <option>Pull</option><option>Push B</option><option>Lower</option>
+            <option>Upper</option><option>Full Body</option><option>Repos</option></select></div>
+          <div class="field"><label>Duree · min</label>
+            <input id="f-seance_min" type="number" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Energie 1-5</label>
+            <input id="f-energie" type="number" min="1" max="5" inputmode="numeric" placeholder="—"></div>
+          <div class="field"><label>Faim 1-5</label>
+            <input id="f-faim" type="number" min="1" max="5" inputmode="numeric" placeholder="—"></div>
+        </div>
+        <p style="color:var(--dimmer);font-size:12px;margin:10px 0 0">
+          Enregistre a chaque frappe. Rien a valider.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span class="panel-t">Donnees</span></div>
+      <div class="panel-b">
+        <div class="kv"><span class="k">Jours</span><span class="v" id="s-jours">0</span></div>
+        <div class="kv"><span class="k">Seances</span><span class="v" id="s-seances">0</span></div>
+        <div class="kv"><span class="k">Taille</span><span class="v" id="s-taille">0 Ko</span></div>
+        <div class="row" style="margin-top:12px">
+          <button class="wide" id="b-export">Exporter</button>
+          <button class="wide" id="b-import">Importer</button>
+        </div>
+        <input type="file" id="f-file" accept=".json" class="hide">
+        <div class="note info" style="margin-top:12px">
+          <b>Exporte regulierement.</b> iOS peut vider le stockage local d'une
+          web app. Le fichier exporte est ta seule sauvegarde — et il se
+          reimporte tel quel dans l'appli Mac.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ANALYSE ============ -->
+  <section id="v-analyse" class="hide"></section>
+
+  <!-- ============ PERFS ============ -->
+  <section id="v-perfs" class="hide"></section>
+</main>
+
+<nav>
+  <button id="n-saisie" aria-selected="true">Saisie</button>
+  <button id="n-analyse" aria-selected="false">Analyse</button>
+  <button id="n-perfs" aria-selected="false">Perfs</button>
+</nav>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
